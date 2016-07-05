@@ -12,13 +12,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
+
+import java.util.ArrayList;
 
 public class BluetoothActivity extends AppCompatActivity {
     Button b1;
     Button b2;
     TextView tv1;
+    ListView lv1;
+    private ArrayList<String> deviceList = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +33,7 @@ public class BluetoothActivity extends AppCompatActivity {
         b1=(Button)findViewById(R.id.button1);
         b2=(Button)findViewById(R.id.button2);
         tv1=(TextView)findViewById(R.id.textview1);
+        lv1=(ListView)findViewById(R.id.listview1);
 
         Log.d("INFO", "Program is started.");
         b1.setOnClickListener(new View.OnClickListener() {
@@ -69,7 +76,9 @@ public class BluetoothActivity extends AppCompatActivity {
                 }else{
                     status="sparowane";
                 }
+                deviceList.add(device.getName()+"\n"+device.getAddress());
                 Log.d("INFO", "Znaleziono urządzenie: "+device.getName()+" - "+device.getAddress()+" - "+status);
+                lv1.setAdapter(new ArrayAdapter<String>(context, android.R.layout.simple_list_item_1, deviceList));
             }
         }
     };
