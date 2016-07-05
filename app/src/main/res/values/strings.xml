@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">BluetoothApp</string>
     <string name="scan_button">Scan</string>
-    <string name="visibility_button">Be visible</string>
-
+    <string name="visibility_button">Become visible</string>
+    <string name="save_button">Save</string>
 </resources>
