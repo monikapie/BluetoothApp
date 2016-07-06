@@ -26,16 +26,31 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/button2"
         android:text="@string/save_button"/>
-
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/button3"
+        android:text="@string/save_file_button"/>
+    <Button
+        android:id="@+id/button5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/button4"
+        android:text="@string/history_button"/>
     <TextView
         android:id="@+id/textview1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/button3"/>
+        android:layout_below="@id/button5"/>
+    <TextView
+        android:id="@+id/textview2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textview1"/>
     <ListView
         android:id="@+id/listview1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/textview1"/>
-
+        android:layout_below="@+id/textview2"/>
 </RelativeLayout>

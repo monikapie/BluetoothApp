@@ -3,4 +3,6 @@
     <string name="scan_button">Scan</string>
     <string name="visibility_button">Become visible</string>
     <string name="save_button">Save</string>
+    <string name="save_file_button">Save to file</string>
+    <string name="history_button">History</string>
 </resources>
