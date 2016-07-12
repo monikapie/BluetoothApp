@@ -1,14 +1,9 @@
 <resources>
     <string name="app_name">BluetoothApp</string>
-    <string name="scan_button">Scan</string>
-    <string name="visibility_button">Become visible</string>
-    <string name="save_button">Save</string>
-    <string name="save_file_button">Save to file</string>
-    <string name="history_button">History</string>
+    <string name="header">Visible devices with BLE</string>
+    <string name="device_disapear">-1</string>
     <string name="ble_not_supported">BLE is not supported</string>
-    <string name="label_data">Data:</string>
-    <string name="label_device_address">Device address:</string>
-    <string name="label_state">State:</string>
+    <string name="time">Time:</string>
     <string name="no_data">No data</string>
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>

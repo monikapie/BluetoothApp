@@ -1,6 +1,7 @@
 package com.world.monika.bluetoothapp;
 
 import android.annotation.TargetApi;
+import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -14,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,20 +31,21 @@ import java.util.Calendar;
 
 @TargetApi(18)
 public class BluetoothActivity extends AppCompatActivity {
-    int summand = 0;
     TextView tv1;
     TextView tv2;
     TextView tv4;
     TextView row;
     ListView lv1;
-    private ArrayList<String> deviceList = new ArrayList<String>();
-    private ArrayList<String> deviceListPlus = new ArrayList<String>();
-    private ArrayList<String> deviceListAll = new ArrayList<String>();
-    private ArrayList<String> macList = new ArrayList<String>();
-    public final static String tag = "INFO";
     private BluetoothAdapter mBluetoothAdapter;
-
+    private ArrayList<String> deviceList = new ArrayList<String>();
+    private ArrayList<String> deviceListDetails = new ArrayList<String>();
+    private ArrayList<String> macList = new ArrayList<String>();
+    private ArrayList<String> macList2 = new ArrayList<String>();
+    public final static String tag = "INFO";
     private static final int REQUEST_ENABLE_BT = 1;
+    //Scanning for the first time - 0, next scanning - >0
+    //to create header and exclude unwanted beacons
+    int counter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,9 +56,16 @@ public class BluetoothActivity extends AppCompatActivity {
         tv4 = (TextView) findViewById(R.id.textview4);
         row = (TextView) findViewById(R.id.Row);
         lv1 = (ListView) findViewById(R.id.listview1);
+        File traceFile = new File(((Context) this).getExternalFilesDir(null), "TraceFile.txt");
 
-
-        tv4.setText("Visible devices with BLE");
+        //Flush file
+        if (traceFile.exists()){
+            try {
+                FileWriter fw = new FileWriter(traceFile, false);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         // Checks whether BLE is supported on the device.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -75,14 +85,13 @@ public class BluetoothActivity extends AppCompatActivity {
             finish();
             return;
         }
-
         Log.i(tag, "Program is started.");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // If Bluetooth is not currently enabled, ask if BLE can be enabled.
+        // Asks if BLE can be enabled.
         if (!mBluetoothAdapter.isEnabled()) {
             if (!mBluetoothAdapter.isEnabled()) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -96,67 +105,87 @@ public class BluetoothActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         scanLeDevice(false);
+    }
 
+    @Override
+    protected  void onStop(){
+        super.onStop();
+        macList.clear();
+        counter = 0;
     }
 
     public void showToast(String text) {
         Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
     }
 
-    //Saving to file
-    public void saveToFile(ArrayList listOfDevices) {
+   public void saveToFile() {
         Log.i(tag, "Saving data to file");
-        String SListOfDevices = "";
-        DateFormat dataFormat = new SimpleDateFormat("d MMM yyyy, HH:mm");
-        String date = dataFormat.format(Calendar.getInstance().getTime());
+        String macListElement="";
         try {
-            // Saving to primary external storage space of the current application.
             File traceFile = new File(((Context) this).getExternalFilesDir(null), "TraceFile.txt");
             if (!traceFile.exists()){
                 traceFile.createNewFile();
             }
             BufferedWriter writer = new BufferedWriter(new FileWriter(traceFile, true));
-            writer.write("\n"+date);
-            writer.write("  ");
-            for (int i = 0; i < listOfDevices.size() - 1; i++) {
-                SListOfDevices = (String) listOfDevices.get(i);
-                writer.write(SListOfDevices);
+            if(counter == 0){
+                writer.write("\n" + "Time" + "\t");
+                for (String ml:macList) {
+                    macListElement = (String) ml;
+                    writer.write(macListElement + "-%\t" + macListElement + "-raw\t");
+                }
+                counter++;
+            }
+            else {
+                String deviceListElement = "";
+                DateFormat dateFormat = new SimpleDateFormat("d MMM yyyy, HH:mm");
+                String date = dateFormat.format(Calendar.getInstance().getTime());
+                writer.write("\n" + date + "\t");
+                for (String mL: macList) {
+                    for (int j = 0; j < macList2.size() - 1; j++) {
+                        if(!(macList2.contains(mL))){
+                            deviceListElement = getString(R.string.device_disapear) + "\t"
+                                    + getString(R.string.device_disapear);
+                            writer.write(deviceListElement + "\t");
+                        }
+                        else if(mL.equals(macList2.get(j))) {
+                            deviceListElement = (String) deviceListDetails.get(j);
+                            writer.write(deviceListElement + "\t");
+                        }
+                    }
+                }
+                macList2.clear();
+                deviceList.clear();
+                deviceListDetails.clear();
             }
             writer.close();
             // Refresh the data.
             MediaScannerConnection.scanFile((Context) (this),
-                    new String[]{traceFile.toString()},
-                    null,
-                    null);
+                    new String[]{traceFile.toString()}, null, null);
         } catch (IOException e) {
             Log.e("FileTestError", "Unable to write to the TraceFile.txt file.");
         }
     }
 
+    //Saves data in every 5th second
     Thread timer = new Thread() {
         public void run () {
             for (;;) {
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                saveToFile(deviceListAll);
+                saveToFile();
             }
         }
     };
 
     private void scanLeDevice(final boolean enable) {
         if (enable) {
-            deviceList.clear();
-            deviceListAll.clear();
-            macList.clear();
-            macList.add(" ");
             timer.start();
             mBluetoothAdapter.startLeScan(mLeScanCallback);
         } else {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
-            Log.i(tag, "Scanning stopped and details saved to file");
         }
     }
 
@@ -178,18 +207,12 @@ public class BluetoothActivity extends AppCompatActivity {
             byte[] uuidBytes = new byte[16];
             System.arraycopy(scanRecord, startByte + 4, uuidBytes, 0, 16);
             String hexString = bytesToHex(uuidBytes);
-
-            //Here is your UUID
             uuid = hexString.substring(0, 8) + "-" +
                     hexString.substring(8, 12) + "-" +
                     hexString.substring(12, 16) + "-" +
                     hexString.substring(16, 20) + "-" +
                     hexString.substring(20, 32);
-
-            //Here is your Major value
             int major = (scanRecord[startByte + 20] & 0xff) * 0x100 + (scanRecord[startByte + 21] & 0xff);
-
-            //Here is your Minor value
             int minor = (scanRecord[startByte + 22] & 0xff) * 0x100 + (scanRecord[startByte + 23] & 0xff);
         }
         return uuid;
@@ -206,6 +229,7 @@ public class BluetoothActivity extends AppCompatActivity {
         return new String(hexChars);
     }
 
+
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
 
@@ -214,28 +238,49 @@ public class BluetoothActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            //Log.i(tag,"Scanning..");
                             String mac = device.getAddress();
                             String name = device.getName();
                             String uuid = getUuid(scanRecord);
-                            int strength =  (rssi+100)*2;
-
-                            for(int i = 0; i <= macList.size(); i++){
-                                if(!macList.contains(mac)){
+                            int strength = (rssi + 100) * 2;
+                            if(counter == 0) {
+                                if (!macList.contains(mac)) {
                                     macList.add(mac);
-                                    deviceList.add(name+" "+mac);
-                                    deviceListAll.add(name+" "+mac+" "+rssi+" "+strength+" "+uuid);
-                                    deviceListPlus.add(rssi+" "+strength+" "+uuid);
                                 }
                             }
-                            lv1.setAdapter(new ArrayAdapter<String>(BluetoothActivity.this, R.layout.row, deviceList));
-                            //Listing details about devices after clicking on row
-                            lv1.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                @Override
-                                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                                    showToast(deviceListPlus.get(i));
+                            else{
+                                if (macList.contains(mac) && !macList2.contains(mac)) {
+                                    macList2.add(mac);
+                                    deviceList.add(name);
+                                    deviceListDetails.add( strength + "\t" + rssi );
                                 }
-                            });
+                            }
+                            if(deviceList.size()>1){
+                                ArrayAdapter adapter = new ArrayAdapter<String>(BluetoothActivity.this, R.layout.row, deviceList){
+                                    @Override
+                                    public int getCount(){
+                                        return deviceList.size();
+                                    }
+                                    @Override
+                                    public String getItem(int position) {
+                                        if (deviceList != null && deviceList.size() > position) {
+                                            return deviceList.get(position);
+                                        } else {
+                                            Log.e("AdapterError", "Unable to show adapter");
+                                            deviceList.add("Error.");
+                                            return deviceList.get(0);
+                                        }
+                                    }
+
+                                };
+                                lv1.setAdapter(adapter);
+                                //Listing details about devices after clicking on row
+                                lv1.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                    @Override
+                                    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                                        showToast(deviceListDetails.get(i));
+                                    }
+                                });
+                            }
                         }
                     });
                 }
