@@ -1,7 +1,6 @@
 package com.world.monika.bluetoothapp;
 
 import android.annotation.TargetApi;
-import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -15,7 +14,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,8 +30,6 @@ import java.util.Calendar;
 @TargetApi(18)
 public class BluetoothActivity extends AppCompatActivity {
     TextView tv1;
-    TextView tv2;
-    TextView tv4;
     TextView row;
     ListView lv1;
     private BluetoothAdapter mBluetoothAdapter;
@@ -52,8 +48,6 @@ public class BluetoothActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
         tv1 = (TextView) findViewById(R.id.textview1);
-        tv2 = (TextView) findViewById(R.id.textview2);
-        tv4 = (TextView) findViewById(R.id.textview4);
         row = (TextView) findViewById(R.id.Row);
         lv1 = (ListView) findViewById(R.id.listview1);
         File traceFile = new File(((Context) this).getExternalFilesDir(null), "TraceFile.txt");
@@ -141,21 +135,18 @@ public class BluetoothActivity extends AppCompatActivity {
                 String date = dateFormat.format(Calendar.getInstance().getTime());
                 writer.write("\n" + date + "\t");
                 for (String mL: macList) {
-                    for (int j = 0; j < macList2.size() - 1; j++) {
-                        if(!(macList2.contains(mL))){
+                    for (int j = 0; j < macList2.size(); j++) {
+                        if(mL.equals(macList2.get(j))) {
+                            deviceListElement = (String) deviceListDetails.get(j);
+                            writer.write(deviceListElement + "\t");
+                        }
+                        else{
                             deviceListElement = getString(R.string.device_disapear) + "\t"
                                     + getString(R.string.device_disapear);
                             writer.write(deviceListElement + "\t");
                         }
-                        else if(mL.equals(macList2.get(j))) {
-                            deviceListElement = (String) deviceListDetails.get(j);
-                            writer.write(deviceListElement + "\t");
-                        }
                     }
                 }
-                macList2.clear();
-                deviceList.clear();
-                deviceListDetails.clear();
             }
             writer.close();
             // Refresh the data.
@@ -180,9 +171,19 @@ public class BluetoothActivity extends AppCompatActivity {
         }
     };
 
+    UIUpdater mUIUpdater = new UIUpdater(new Runnable() {
+        @Override
+        public void run() {
+            macList2.clear();
+            deviceList.clear();
+            deviceListDetails.clear();
+        }
+    });
+
     private void scanLeDevice(final boolean enable) {
         if (enable) {
             timer.start();
+            mUIUpdater.startUpdates();
             mBluetoothAdapter.startLeScan(mLeScanCallback);
         } else {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
@@ -240,7 +241,7 @@ public class BluetoothActivity extends AppCompatActivity {
                         public void run() {
                             String mac = device.getAddress();
                             String name = device.getName();
-                            String uuid = getUuid(scanRecord);
+                            //String uuid = getUuid(scanRecord);
                             int strength = (rssi + 100) * 2;
                             if(counter == 0) {
                                 if (!macList.contains(mac)) {
@@ -250,7 +251,7 @@ public class BluetoothActivity extends AppCompatActivity {
                             else{
                                 if (macList.contains(mac) && !macList2.contains(mac)) {
                                     macList2.add(mac);
-                                    deviceList.add(name);
+                                    deviceList.add(name + " " + mac);
                                     deviceListDetails.add( strength + "\t" + rssi );
                                 }
                             }
